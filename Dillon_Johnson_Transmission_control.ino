@@ -1,4 +1,8 @@
 /*
+ * K. Ellrod
+ * V1.0 initial release
+ * V1.1 updated TC lockup code to not delay every code cycle.
+ * 
  * GEAR logic:
  * 
  * GEAR   SOLENOID #1   SOLENOID #2   SOLENOID#3 (TCL)
@@ -20,6 +24,7 @@ const int DownShiftPin = A1;
 const int TCLockupDelay = 1000; //when you shift into 4th, there's a 1000 ms delay before the lockup is engaged, tune to suit.
 
 //This defines your variables
+int TCLockup = 0; //state of torque converter
 int CurrentGearPosition = 1; //boots up in first gear
 int buttonState[] = {1, 1};        // the current state of which buttons are pressed (if you want more buttons, you'd add more numbers)
 int lastButtonState[] = {1, 1};   // the previous reading from which buttons are pressed (for the debouncer)
@@ -32,7 +37,7 @@ unsigned long debounceDelay = 50;    // the debounce time (in ms); adjust as nec
 
 void setup() 
 {
-  Serial.begin(9600);  //start serial connection
+//  Serial.begin(9600);  //start serial connection
   pinMode(Solenoid1Pin, OUTPUT);  //Sets the output pin types
   pinMode(Solenoid2Pin, OUTPUT);
   pinMode(Solenoid3Pin, OUTPUT);  
@@ -82,18 +87,21 @@ void loop()
   switch (CurrentGearPosition) 
     {
       case 1:
+        TCLockup = 0;
         digitalWrite(Solenoid1Pin, HIGH);
         digitalWrite(Solenoid2Pin, LOW);
         digitalWrite(Solenoid3Pin, LOW);
 //        Serial.println("1st gear");
         break;
       case 2:
+        TCLockup = 0;
         digitalWrite(Solenoid1Pin, HIGH);
         digitalWrite(Solenoid2Pin, HIGH);
         digitalWrite(Solenoid3Pin, LOW);
 //        Serial.println("2nd gear");
         break;
       case 3:
+        TCLockup = 0; 
         digitalWrite(Solenoid1Pin, LOW);
         digitalWrite(Solenoid2Pin, HIGH);
         digitalWrite(Solenoid3Pin, LOW);
@@ -103,9 +111,14 @@ void loop()
         digitalWrite(Solenoid1Pin, LOW);
         digitalWrite(Solenoid2Pin, LOW);
 //        Serial.println("4th gear");
+        if(TCLockup == 0)
+        {
         delay(TCLockupDelay);
         digitalWrite(Solenoid3Pin, HIGH);
-//        Serial.println("TC lockup");
+        TCLockup = 1;
+        Serial.println("TC lockup");
+        }
+
         break;
       default:
         // put error behavior here
